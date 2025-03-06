@@ -3,7 +3,6 @@ import { auth } from "@clerk/nextjs";
 
 import prismadb from "@/lib/prismadb";
 
-
 export async function GET(
   req: Request,
   { params }: { params: { productId: string } }
@@ -15,27 +14,26 @@ export async function GET(
 
     const product = await prismadb.product.findUnique({
       where: {
-        id: params.productId
+        id: params.productId,
       },
       include: {
         images: true,
         category: true,
         subcategory: true,
-        // size: true,
-        // color: true,
-      }
+        provider: true,
+      },
     });
 
     return NextResponse.json(product);
   } catch (error) {
-    console.log('[PRODUCT_GET]', error);
+    console.log("[PRODUCT_GET]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
-};
+}
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { productId: string, storeId: string } }
+  { params }: { params: { productId: string; storeId: string } }
 ) {
   try {
     const { userId } = auth();
@@ -51,8 +49,8 @@ export async function DELETE(
     const storeByUserId = await prismadb.store.findFirst({
       where: {
         id: params.storeId,
-        userId
-      }
+        userId,
+      },
     });
 
     if (!storeByUserId) {
@@ -62,26 +60,26 @@ export async function DELETE(
     // Delete all OrderItem records associated with the Product
     await prismadb.orderItem.deleteMany({
       where: {
-        productId: params.productId
+        productId: params.productId,
       },
     });
 
     const product = await prismadb.product.delete({
       where: {
-        id: params.productId
+        id: params.productId,
       },
     });
 
     return NextResponse.json(product);
   } catch (error) {
-    console.log('[PRODUCT_DELETE]', error);
+    console.log("[PRODUCT_DELETE]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
-};
+}
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { productId: string, storeId: string } }
+  { params }: { params: { productId: string; storeId: string } }
 ) {
   try {
     const { userId } = auth();
@@ -96,6 +94,7 @@ export async function PATCH(
       offerPrice,
       categoryId,
       subcategoryId,
+      providerId,
       images,
       hasOffer,
       isFeatured,
@@ -161,6 +160,7 @@ export async function PATCH(
         price,
         categoryId,
         subcategoryId,
+        providerId,
         images: {
           deleteMany: {},
         },

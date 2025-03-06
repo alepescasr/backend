@@ -1,0 +1,9 @@
+---
+description: Best practices for using Clerk for authentication
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+ - Use Clerk's pre-built UI components for seamless authentication flows
+- Implement proper error handling and user feedback for authentication processes
+- Utilize Clerk's webhooks for real-time user management and security events
+- Ensure proper security measures by following Clerk's best practices guide

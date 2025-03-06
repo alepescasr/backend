@@ -56,7 +56,17 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           </div>
         ))}
       </div>
-      <CldUploadWidget onUpload={onUpload} uploadPreset="pthkbmbo">
+      <CldUploadWidget
+        onUpload={onUpload}
+        uploadPreset="ecommerce_unsigned"
+        options={{
+          maxFiles: 5,
+          sources: ["local", "url", "camera"],
+          resourceType: "image",
+          publicId: `ecommerce-${Date.now()}`,
+          folder: "ecommerce-admin",
+        }}
+      >
         {({ open }) => {
           const onClick = () => {
             open();

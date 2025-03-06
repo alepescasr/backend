@@ -1,21 +1,21 @@
 "use client";
 
 import { useEffect } from "react";
-import { useParams } from "next/navigation";
-
-import { useStoreModal } from "@/hooks/use-store-modal";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 
 const SetupPage = () => {
-  const onOpen = useStoreModal((state) => state.onOpen);
-  const isOpen = useStoreModal((state) => state.isOpen);
+  const router = useRouter();
+  const { userId } = useAuth();
 
   useEffect(() => {
-    if (!isOpen) {
-      onOpen();
+    // Si el usuario está autenticado, redirigir al dashboard
+    if (userId) {
+      router.push("/dashboard");
     }
-  }, [isOpen, onOpen]);
+  }, [router, userId]);
 
   return null;
 };
- 
+
 export default SetupPage;

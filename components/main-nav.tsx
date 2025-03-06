@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
@@ -10,49 +10,42 @@ export function MainNav({
   ...props
 }: React.HTMLAttributes<HTMLElement>) {
   const pathname = usePathname();
-  const params = useParams();
 
   const routes = [
+    // {
+    //   href: `/dashboard`,
+    //   label: "Panel",
+    //   active: pathname === `/dashboard`,
+    // },
     {
-      href: `/${params.storeId}`,
-      label: "Panel",
-      active: pathname === `/${params.storeId}`,
-    },
-    {
-      href: `/${params.storeId}/categories`,
+      href: `/dashboard/categories`,
       label: "Categorías",
-      active: pathname === `/${params.storeId}/categories`,
+      active: pathname === `/dashboard/categories`,
     },
     {
-      href: `/${params.storeId}/subcategories`,
+      href: `/dashboard/subcategories`,
       label: "Subcategorías",
-      active: pathname === `/${params.storeId}/subcategories`,
+      active: pathname === `/dashboard/subcategories`,
     },
     {
-      href: `/${params.storeId}/products`,
+      href: `/dashboard/products`,
       label: "Productos",
-      active: pathname === `/${params.storeId}/products`,
+      active: pathname === `/dashboard/products`,
     },
-
-    // {
-    //   href: `/${params.storeId}/colors`,
-    //   label: "Colors",
-    //   active: pathname === `/${params.storeId}/colors`,
-    // },
-    // {
-    //   href: `/${params.storeId}/sizes`,
-    //   label: "Sizes",
-    //   active: pathname === `/${params.storeId}/sizes`,
-    // },
     {
-      href: `/${params.storeId}/orders`,
+      href: `/dashboard/providers`,
+      label: "Proveedores",
+      active: pathname === `/dashboard/providers`,
+    },
+    {
+      href: `/dashboard/orders`,
       label: "Ordenes",
-      active: pathname === `/${params.storeId}/orders`,
+      active: pathname === `/dashboard/orders`,
     },
     {
-      href: `/${params.storeId}/settings`,
+      href: `/dashboard/settings`,
       label: "Configuración",
-      active: pathname === `/${params.storeId}/settings`,
+      active: pathname === `/dashboard/settings`,
     },
   ];
 
@@ -61,6 +54,17 @@ export function MainNav({
       className={cn("flex items-center space-x-4 lg:space-x-6", className)}
       {...props}
     >
+      <Link
+        href={"/dashboard"}
+        className={cn(
+          "text-lg uppercase font-extrabold transition-colors hover:text-primary",
+          pathname === "/dashboard"
+            ? "text-black dark:text-white"
+            : "text-muted-foreground"
+        )}
+      >
+        Panel
+      </Link>
       {routes.map((route) => (
         <Link
           key={route.href}

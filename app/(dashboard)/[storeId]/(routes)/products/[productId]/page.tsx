@@ -5,7 +5,7 @@ import { ProductForm } from "./components/product-form";
 const ProductPage = async ({
   params,
 }: {
-  params: { productId: string; storeId: string; categoryId: string };
+  params: { productId: string; storeId: string };
 }) => {
   const product = await prismadb.product.findUnique({
     where: {
@@ -17,14 +17,27 @@ const ProductPage = async ({
   });
 
   const categories = await prismadb.category.findMany({
-    where: {
-      storeId: params.storeId,
+    orderBy: {
+      name: "asc",
     },
   });
 
+  // Si hay un producto y tiene categoryId, buscar subcategorías de esa categoría
+  // Si no, obtener todas las subcategorías
   const subcategories = await prismadb.subcategory.findMany({
-    where: {
-      categoryId: params.categoryId,
+    where: product?.categoryId
+      ? {
+          categoryId: product.categoryId,
+        }
+      : undefined,
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  const providers = await prismadb.provider.findMany({
+    orderBy: {
+      name: "asc",
     },
   });
 
@@ -46,6 +59,7 @@ const ProductPage = async ({
         <ProductForm
           categories={categories}
           subcategories={subcategories}
+          providers={providers}
           // colors={colors}
           // sizes={sizes}
           initialData={product}

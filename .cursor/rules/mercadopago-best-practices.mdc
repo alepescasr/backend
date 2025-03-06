@@ -1,0 +1,9 @@
+---
+description: Best practices for integrating Mercado Pago payment
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+ - Use Mercado Pago's official SDK for seamless integration
+- Implement proper error handling and user feedback for payment flows
+- Utilize Mercado Pago's webhooks for real-time payment status updates
+- Ensure compliance with Mercado Pago's security guidelines

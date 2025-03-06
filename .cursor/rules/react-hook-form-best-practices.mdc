@@ -1,0 +1,9 @@
+---
+description: Best practices for using React Hook Form
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+ - Use controlled components for better performance and easier state management
+- Implement proper form validation using React Hook Form's built-in features
+- Utilize React Hook Form's TypeScript support for improved type safety
+- Use the `watch` function for real-time form value monitoring when necessary

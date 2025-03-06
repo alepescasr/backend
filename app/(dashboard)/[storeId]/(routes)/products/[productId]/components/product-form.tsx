@@ -49,6 +49,7 @@ const formSchema = z.object({
   offerPrice: z.number().min(1).nullable().optional(),
   categoryId: z.string().min(1),
   subcategoryId: z.string().min(1),
+  providerId: z.string().nullable().optional(),
   // colorId: z.string().min(1),
   // sizeId: z.string().min(1),
   hasOffer: z.boolean().default(false).optional(),
@@ -66,6 +67,7 @@ interface ProductFormProps {
     | null;
   categories: Category[];
   subcategories: Subcategory[];
+  providers: { id: string; name: string }[];
   // colors: Color[];
   // sizes: Size[];
 }
@@ -74,8 +76,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   initialData,
   categories,
   subcategories,
+  providers,
+  // colors,
   // sizes,
-  // colors
 }) => {
   const params = useParams();
   const router = useRouter();
@@ -397,6 +400,39 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                             {subcategory.name}
                           </SelectItem>
                         ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="providerId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Proveedor</FormLabel>
+                  <Select
+                    disabled={loading}
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
+                    defaultValue={field.value || ""}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue
+                          defaultValue={field.value || ""}
+                          placeholder="Seleccionar proveedor (opcional)"
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">Ninguno</SelectItem>
+                      {providers.map((provider) => (
+                        <SelectItem key={provider.id} value={provider.id}>
+                          {provider.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

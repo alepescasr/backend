@@ -1,0 +1,9 @@
+---
+description: Best practices for using Tailwind CSS
+globs: **/*.{ts,tsx,css}
+alwaysApply: false
+---
+ - Use utility-first approach for consistent and maintainable styles
+- Create custom components for reusable UI elements
+- Utilize Tailwind's responsive utilities for mobile-first design
+- Keep your Tailwind configuration file organized and version-controlled
