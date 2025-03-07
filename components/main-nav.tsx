@@ -38,6 +38,16 @@ export function MainNav({
       active: pathname === `/dashboard/providers`,
     },
     {
+      href: `/dashboard/colors`,
+      label: "Colores",
+      active: pathname === `/dashboard/colors`,
+    },
+    {
+      href: `/dashboard/price-updates`,
+      label: "Actualizar Precios",
+      active: pathname === `/dashboard/price-updates`,
+    },
+    {
       href: `/dashboard/orders`,
       label: "Ordenes",
       active: pathname === `/dashboard/orders`,

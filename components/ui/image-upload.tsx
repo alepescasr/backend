@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { ImagePlus, Trash } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 interface ImageUploadProps {
   disabled?: boolean;
@@ -21,22 +22,42 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   value,
 }) => {
   const [isMounted, setIsMounted] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   const onUpload = (result: any) => {
+    console.log("Cloudinary upload result:", result);
     onChange(result.info.secure_url);
+    setIsUploading(false);
+    toast.success("Imagen subida correctamente");
+  };
+
+  const onError = (error: any) => {
+    console.error("Error al subir imagen:", error);
+    setIsUploading(false);
+    toast.error("Error al subir la imagen. Por favor, intenta de nuevo.");
   };
 
   if (!isMounted) {
     return null;
   }
 
+  if (!cloudName) {
+    return (
+      <div className="p-4 text-red-500 border border-red-500 rounded-md">
+        Error: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME no está configurado en las
+        variables de entorno.
+      </div>
+    );
+  }
+
   return (
     <div>
-      <div className="mb-4 flex items-center gap-4">
+      <div className="mb-4 flex items-center gap-4 flex-wrap">
         {value.map((url) => (
           <div
             key={url}
@@ -58,6 +79,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       </div>
       <CldUploadWidget
         onUpload={onUpload}
+        onError={onError}
         uploadPreset="ecommerce_unsigned"
         options={{
           maxFiles: 5,
@@ -69,17 +91,18 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       >
         {({ open }) => {
           const onClick = () => {
+            setIsUploading(true);
             open();
           };
           return (
             <Button
               type="button"
-              disabled={disabled}
+              disabled={disabled || isUploading}
               variant="secondary"
               onClick={onClick}
             >
               <ImagePlus className="h-4 w-4 mr-2" />
-              Subir imagen
+              {isUploading ? "Subiendo..." : "Subir imagen"}
             </Button>
           );
         }}

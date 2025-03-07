@@ -7,6 +7,9 @@ mercadopago.configure({
   access_token: process.env.NEXT_ACCESS_TOKEN!,
 });
 
+// Precio fijo de envío
+const SHIPPING_FEE = 2000;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -43,18 +46,35 @@ export async function POST(req: Request) {
 
   const items: CreatePreferencePayload["items"] = [];
 
+  // Calcular el subtotal de los productos
+  let subtotal = 0;
+
   cartItems.forEach((item: { productId: string; quantity: number }) => {
     const product = productMap[item.productId];
     if (product) {
+      const price = product.offerPrice
+        ? product.offerPrice.toNumber()
+        : product.price.toNumber();
+
+      subtotal += price * item.quantity;
+
       items.push({
         title: product.name,
-        unit_price: product.offerPrice
-          ? product.offerPrice.toNumber()
-          : product.price.toNumber(),
+        unit_price: price,
         quantity: item.quantity,
       });
     }
   });
+
+  // Agregar el envío como un ítem separado
+  items.push({
+    title: "Envío estándar",
+    unit_price: SHIPPING_FEE,
+    quantity: 1,
+  });
+
+  // Calcular el total incluyendo el envío
+  const totalAmount = subtotal + SHIPPING_FEE;
 
   const order = await prismadb.order.create({
     data: {
@@ -72,6 +92,8 @@ export async function POST(req: Request) {
         ),
       },
       formData: orderFormData,
+      shippingFee: SHIPPING_FEE,
+      totalAmount: totalAmount,
     },
   });
 
@@ -89,7 +111,13 @@ export async function POST(req: Request) {
   const response = await mercadopago.preferences.create(preference);
 
   return NextResponse.json(
-    { url: response.body.init_point },
+    {
+      url: response.body.init_point,
+      orderId: order.id,
+      subtotal,
+      shippingFee: SHIPPING_FEE,
+      totalAmount,
+    },
     {
       headers: corsHeaders,
     }

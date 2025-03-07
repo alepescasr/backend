@@ -14,6 +14,7 @@ import {
   Product,
   Provider,
   Subcategory,
+  Color,
 } from "@prisma/client";
 
 import { Input } from "@/components/ui/input";
@@ -52,6 +53,9 @@ const formSchema = z.object({
   subcategoryId: z.string().min(1),
   providerId: z.string().optional(),
   stock: z.coerce.number().min(0).default(0),
+  colorId: z.string().optional(),
+  weight: z.coerce.number().optional(),
+  attributes: z.any().optional(),
   isFeatured: z.boolean().default(false).optional(),
   isArchived: z.boolean().default(false).optional(),
   hasOffer: z.boolean().default(false).optional(),
@@ -67,11 +71,13 @@ interface ProductFormProps {
         offerPrice: string | null;
         createdAt: string;
         updatedAt: string;
+        color?: Color | null;
       })
     | null;
   categories: Category[];
   subcategories: Subcategory[];
   providers: Provider[];
+  colors: Color[];
 }
 
 export const ProductForm: React.FC<ProductFormProps> = ({
@@ -79,6 +85,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   categories,
   subcategories,
   providers,
+  colors,
 }) => {
   const params = useParams();
   const router = useRouter();
@@ -98,6 +105,25 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       : subcategories
   );
 
+  // Estado para los atributos personalizados
+  const [categoryAttributes, setCategoryAttributes] = useState<
+    Record<string, any>
+  >((initialData?.attributes as Record<string, any>) || {});
+
+  // Función para actualizar los atributos personalizados
+  const updateCategoryAttribute = (key: string, value: any) => {
+    setCategoryAttributes((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+
+    // Actualizar el formulario con los nuevos atributos
+    form.setValue("attributes", {
+      ...categoryAttributes,
+      [key]: value,
+    });
+  };
+
   const title = initialData ? "Editar producto" : "Crear producto";
   const description = initialData
     ? "Editar un producto."
@@ -115,7 +141,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           ? parseFloat(String(initialData.offerPrice))
           : undefined,
         providerId: initialData.providerId || undefined,
+        colorId: initialData.colorId || undefined,
         stock: initialData.stock || 0,
+        weight: initialData.weight === null ? undefined : initialData.weight,
       }
     : {
         name: "",
@@ -127,7 +155,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         categoryId: "",
         subcategoryId: "",
         providerId: undefined,
+        colorId: undefined,
         stock: 0,
+        weight: undefined,
+        attributes: {},
         isFeatured: false,
         isArchived: false,
         hasOffer: false,
@@ -181,6 +212,46 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       (subcategory) => subcategory.categoryId === categoryId
     );
     setFilteredSubcategories(filtered);
+
+    // Definir atributos específicos según la categoría seleccionada
+    const selectedCategory = categories.find((cat) => cat.id === categoryId);
+    if (selectedCategory) {
+      // Reiniciar los atributos
+      let newAttributes: Record<string, any> = {};
+
+      // Configurar atributos según la categoría
+      switch (selectedCategory.name.toLowerCase()) {
+        case "ropa":
+          newAttributes = {
+            talla: "",
+            material: "",
+            instruccionesLavado: "",
+          };
+          break;
+        case "electrónica":
+          newAttributes = {
+            voltaje: "",
+            garantía: "",
+            dimensiones: "",
+          };
+          break;
+        case "alimentos":
+          newAttributes = {
+            fechaCaducidad: "",
+            ingredientes: "",
+            informaciónNutricional: "",
+          };
+          break;
+        // Añadir más categorías según sea necesario
+        default:
+          // Categoría sin atributos específicos
+          break;
+      }
+
+      // Actualizar el estado y el formulario
+      setCategoryAttributes(newAttributes);
+      form.setValue("attributes", newAttributes);
+    }
   };
 
   return (
@@ -311,6 +382,103 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="colorId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Color (opcional)</FormLabel>
+                  <Select
+                    disabled={loading}
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
+                    defaultValue={field.value || ""}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue
+                          defaultValue={field.value}
+                          placeholder="Seleccionar color"
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">Sin color</SelectItem>
+                      {colors.map((color) => (
+                        <SelectItem key={color.id} value={color.id}>
+                          <div className="flex items-center gap-x-2">
+                            <div
+                              className="h-4 w-4 rounded-full border"
+                              style={{ backgroundColor: color.value }}
+                            />
+                            {color.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="weight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Peso (kg)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      disabled={loading}
+                      placeholder="0.5"
+                      {...field}
+                      value={field.value === undefined ? "" : field.value}
+                      onChange={(e) => {
+                        const value =
+                          e.target.value === ""
+                            ? undefined
+                            : parseFloat(e.target.value);
+                        field.onChange(value);
+                      }}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Peso del producto en kilogramos (opcional)
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Atributos específicos de categoría */}
+            {Object.keys(categoryAttributes).length > 0 && (
+              <div className="col-span-3">
+                <div className="border rounded-md p-4">
+                  <h3 className="text-lg font-medium mb-4">
+                    Atributos específicos de categoría
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {Object.entries(categoryAttributes).map(([key, value]) => (
+                      <div key={key} className="space-y-2">
+                        <label className="text-sm font-medium">
+                          {key.charAt(0).toUpperCase() + key.slice(1)}
+                        </label>
+                        <Input
+                          value={value || ""}
+                          onChange={(e) =>
+                            updateCategoryAttribute(key, e.target.value)
+                          }
+                          placeholder={`Ingrese ${key}`}
+                          disabled={loading}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
             <FormField
               control={form.control}
               name="categoryId"

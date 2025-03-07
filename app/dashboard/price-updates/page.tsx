@@ -1,16 +1,7 @@
-import { auth } from "@clerk/nextjs";
-import { redirect } from "next/navigation";
-
 import prismadb from "@/lib/prismadb";
-import { ProductForm } from "../[productId]/components/product-form";
+import { PriceUpdateForm } from "./components/price-update-form";
 
-export default async function NewProductPage() {
-  const { userId } = await auth();
-
-  if (!userId) {
-    redirect("/sign-in");
-  }
-
+const PriceUpdatesPage = async () => {
   const categories = await prismadb.category.findMany({
     orderBy: {
       name: "asc",
@@ -29,23 +20,28 @@ export default async function NewProductPage() {
     },
   });
 
-  const colors = await prismadb.color.findMany({
+  const products = await prismadb.product.findMany({
     orderBy: {
       name: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
     },
   });
 
   return (
     <div className="flex-col">
       <div className="flex-1 space-y-4 p-8 pt-6">
-        <ProductForm
+        <PriceUpdateForm
           categories={categories}
           subcategories={subcategories}
           providers={providers}
-          colors={colors}
-          initialData={null}
+          products={products}
         />
       </div>
     </div>
   );
-}
+};
+
+export default PriceUpdatesPage;

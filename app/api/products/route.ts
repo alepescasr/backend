@@ -30,6 +30,11 @@ export async function POST(req: Request) {
       nameTag,
       description,
       stock,
+      colorId,
+      weight,
+      attributes,
+      hasOffer,
+      offerPrice,
     } = body;
 
     if (!name) {
@@ -76,6 +81,11 @@ export async function POST(req: Request) {
         subcategoryId,
         providerId,
         stock: stock || 0,
+        colorId,
+        weight,
+        attributes,
+        hasOffer: hasOffer || false,
+        offerPrice,
         images: {
           createMany: {
             data: [...images.map((image: { url: string }) => image)],
@@ -112,6 +122,7 @@ export async function GET(req: Request) {
         category: true,
         subcategory: true,
         provider: true,
+        color: true,
       },
       orderBy: {
         createdAt: "desc",

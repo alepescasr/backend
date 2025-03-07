@@ -21,6 +21,7 @@ export async function GET(
         category: true,
         subcategory: true,
         provider: true,
+        color: true,
       },
     });
 
@@ -71,6 +72,11 @@ export async function PATCH(
       nameTag,
       description,
       stock,
+      colorId,
+      weight,
+      attributes,
+      hasOffer,
+      offerPrice,
     } = body;
 
     if (!params.productId) {
@@ -123,6 +129,11 @@ export async function PATCH(
         subcategoryId,
         providerId,
         stock,
+        colorId,
+        weight,
+        attributes,
+        hasOffer: hasOffer || false,
+        offerPrice,
         images: {
           deleteMany: {},
         },

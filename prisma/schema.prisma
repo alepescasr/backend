@@ -63,6 +63,10 @@ model Product {
   isFeatured    Boolean     @default(false)
   isArchived    Boolean     @default(false)
   stock         Int         @default(0)
+  colorId       String?
+  color         Color?      @relation(fields: [colorId], references: [id])
+  weight        Float?
+  attributes    Json? // Campo JSON para almacenar atributos personalizados según categoría
   images        Image[]
   orderItems    OrderItem[]
   createdAt     DateTime    @default(now())
@@ -71,15 +75,18 @@ model Product {
   @@index([categoryId])
   @@index([subcategoryId])
   @@index([providerId])
+  @@index([colorId])
 }
 
 model Order {
-  id         String      @id @default(uuid())
-  orderItems OrderItem[]
-  isPaid     Boolean     @default(false)
-  formData   Json? // Customer information as JSON
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id          String      @id @default(uuid())
+  orderItems  OrderItem[]
+  isPaid      Boolean     @default(false)
+  formData    Json? // Customer information as JSON
+  shippingFee Decimal     @default(2000) // Precio fijo de envío
+  totalAmount Decimal? // Monto total incluyendo envío
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model OrderItem {
@@ -103,6 +110,15 @@ model Image {
   updatedAt DateTime @updatedAt
 
   @@index([productId])
+}
+
+model Color {
+  id        String    @id @default(uuid())
+  name      String
+  value     String // Hex code or color identifier
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 // model Size {
