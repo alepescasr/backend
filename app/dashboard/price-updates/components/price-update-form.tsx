@@ -742,7 +742,7 @@ export const PriceUpdateForm: React.FC<PriceUpdateFormProps> = ({
                       <p className="text-sm text-red-500 mt-2">
                         No hay productos que coincidan con los criterios
                         seleccionados. Por favor, ajuste los filtros o haga clic
-                        en "Vista Previa" para actualizar.
+                        en &quot;Vista Previa&quot; para actualizar.
                       </p>
                     )}
                   </div>

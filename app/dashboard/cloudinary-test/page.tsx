@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CldUploadWidget } from "next-cloudinary";
 import { toast } from "react-hot-toast";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import Image from "next/image";
 
 export default function CloudinaryTestPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -173,10 +174,11 @@ export default function CloudinaryTestPage() {
                             exitosa
                           </p>
                           <div className="w-[200px] h-[200px] relative">
-                            <img
+                            <Image
                               src={testResults[preset].url}
                               alt="Uploaded"
-                              className="w-full h-full object-cover rounded-md"
+                              fill
+                              className="object-cover rounded-md"
                             />
                           </div>
                         </div>
