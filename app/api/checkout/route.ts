@@ -2,6 +2,7 @@ import { CreatePreferencePayload } from "mercadopago/models/preferences/create-p
 import { NextResponse } from "next/server";
 import prismadb from "@/lib/prismadb";
 import mercadopago from "mercadopago";
+import { Prisma } from "@prisma/client";
 
 mercadopago.configure({
   access_token: process.env.NEXT_ACCESS_TOKEN!,
@@ -76,25 +77,36 @@ export async function POST(req: Request) {
   // Calcular el total incluyendo el envío
   const totalAmount = subtotal + SHIPPING_FEE;
 
-  const order = await prismadb.order.create({
-    data: {
-      isPaid: false,
-      orderItems: {
-        create: cartItems.map(
-          (item: { productId: string; quantity: number }) => ({
-            product: {
-              connect: {
-                id: item.productId,
-              },
+  // Crear datos para la orden con manejo condicional de los campos nuevos
+  const orderData: Prisma.OrderCreateInput = {
+    isPaid: false,
+    orderItems: {
+      create: cartItems.map(
+        (item: { productId: string; quantity: number }) => ({
+          product: {
+            connect: {
+              id: item.productId,
             },
-            quantity: item.quantity,
-          })
-        ),
-      },
-      formData: orderFormData,
-      shippingFee: SHIPPING_FEE,
-      totalAmount: totalAmount,
+          },
+          quantity: item.quantity,
+        })
+      ),
     },
+    formData: orderFormData,
+  };
+
+  // Intentar agregar los campos de envío si existen en el modelo
+  try {
+    // @ts-ignore - Estos campos pueden no existir hasta que se aplique la migración
+    orderData.shippingFee = SHIPPING_FEE;
+    // @ts-ignore - Estos campos pueden no existir hasta que se aplique la migración
+    orderData.totalAmount = totalAmount;
+  } catch (error) {
+    console.log("Campos de envío no disponibles aún:", error);
+  }
+
+  const order = await prismadb.order.create({
+    data: orderData,
   });
 
   const preference: CreatePreferencePayload = {

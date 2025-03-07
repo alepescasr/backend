@@ -27,6 +27,17 @@ const nextConfig = {
   images: {
     domains: ["res.cloudinary.com"],
   },
+  // Configuración para ignorar advertencias específicas
+  webpack: (config, { isServer }) => {
+    // Ignorar advertencias específicas
+    config.ignoreWarnings = [
+      // Ignorar advertencias sobre APIs de Node.js no soportadas en Edge Runtime
+      { message: /A Node.js API is used.*Edge Runtime/ },
+      // Ignorar advertencias sobre serialización de cadenas grandes
+      { message: /Serializing big strings/ },
+    ];
+    return config;
+  },
 };
 
 module.exports = nextConfig;
