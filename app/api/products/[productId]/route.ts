@@ -77,6 +77,9 @@ export async function PATCH(
       attributes,
       hasOffer,
       offerPrice,
+      code,
+      calibration,
+      costPrice,
     } = body;
 
     if (!params.productId) {
@@ -111,10 +114,6 @@ export async function PATCH(
       return new NextResponse("Subcategory ID is required", { status: 400 });
     }
 
-    if (!providerId) {
-      return new NextResponse("Provider ID is required", { status: 400 });
-    }
-
     // Update the product
     await prismadb.product.update({
       where: {
@@ -127,13 +126,15 @@ export async function PATCH(
         price,
         categoryId,
         subcategoryId,
-        providerId,
         stock,
         colorId,
         weight,
         attributes,
         hasOffer: hasOffer || false,
         offerPrice,
+        code,
+        calibration,
+        costPrice,
         images: {
           deleteMany: {},
         },

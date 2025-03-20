@@ -57,7 +57,10 @@ model Product {
   name          String
   nameTag       String
   description   String      @db.VarChar(800)
+  code          String? // Código opcional del producto
+  calibration   String? // Calibración opcional (en gr o mm)
   price         Decimal
+  costPrice     Decimal? // Precio de costo opcional
   offerPrice    Decimal?
   hasOffer      Boolean     @default(false)
   isFeatured    Boolean     @default(false)

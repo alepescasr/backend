@@ -5,7 +5,7 @@ import mercadopago from "mercadopago";
 import { Prisma } from "@prisma/client";
 
 mercadopago.configure({
-  access_token: process.env.NEXT_ACCESS_TOKEN!,
+  access_token: process.env.NEXT_ACCESS_TOKEN_MERCADO_PAGO!,
 });
 
 // Precio fijo de envío

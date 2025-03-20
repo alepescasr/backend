@@ -49,6 +49,9 @@ const formSchema = z.object({
   images: z.object({ url: z.string() }).array(),
   price: z.coerce.number().min(1),
   offerPrice: z.coerce.number().min(1).optional(),
+  code: z.string().optional(),
+  calibration: z.string().optional(),
+  costPrice: z.coerce.number().min(0).optional(),
   categoryId: z.string().min(1),
   subcategoryId: z.string().min(1),
   providerId: z.string().optional(),
@@ -69,6 +72,9 @@ interface ProductFormProps {
         images: Image[];
         price: string;
         offerPrice: string | null;
+        costPrice?: string | null;
+        code?: string | null;
+        calibration?: string | null;
         createdAt: string;
         updatedAt: string;
         color?: Color | null;
@@ -140,6 +146,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         offerPrice: initialData?.offerPrice
           ? parseFloat(String(initialData.offerPrice))
           : undefined,
+        costPrice: initialData?.costPrice
+          ? parseFloat(String(initialData.costPrice))
+          : undefined,
+        code: initialData.code || undefined,
+        calibration: initialData.calibration || undefined,
         providerId: initialData.providerId || undefined,
         colorId: initialData.colorId || undefined,
         stock: initialData.stock || 0,
@@ -152,6 +163,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         images: [],
         price: 0,
         offerPrice: undefined,
+        code: undefined,
+        calibration: undefined,
+        costPrice: undefined,
         categoryId: "",
         subcategoryId: "",
         providerId: undefined,
@@ -377,6 +391,78 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                   </FormControl>
                   <FormDescription>
                     Cantidad de unidades disponibles
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Código (opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={loading}
+                      placeholder="COD123"
+                      {...field}
+                      value={field.value || ""}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Código de referencia del producto
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="calibration"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Calibración (opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={loading}
+                      placeholder="10gr o 5mm"
+                      {...field}
+                      value={field.value || ""}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Calibración en gramos (gr) o milímetros (mm)
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="costPrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Precio de costo (opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      disabled={loading}
+                      placeholder="5.99"
+                      {...field}
+                      value={field.value === undefined ? "" : field.value}
+                      onChange={(e) => {
+                        const value =
+                          e.target.value === ""
+                            ? undefined
+                            : parseFloat(e.target.value);
+                        field.onChange(value);
+                      }}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Precio de costo del producto
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

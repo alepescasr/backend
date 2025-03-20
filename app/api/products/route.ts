@@ -35,6 +35,9 @@ export async function POST(req: Request) {
       attributes,
       hasOffer,
       offerPrice,
+      code,
+      calibration,
+      costPrice,
     } = body;
 
     if (!name) {
@@ -65,10 +68,6 @@ export async function POST(req: Request) {
       return new NextResponse("Subcategory ID is required", { status: 400 });
     }
 
-    if (!providerId) {
-      return new NextResponse("Provider ID is required", { status: 400 });
-    }
-
     const product = await prismadb.product.create({
       data: {
         name,
@@ -86,6 +85,9 @@ export async function POST(req: Request) {
         attributes,
         hasOffer: hasOffer || false,
         offerPrice,
+        code,
+        calibration,
+        costPrice,
         images: {
           createMany: {
             data: [...images.map((image: { url: string }) => image)],
