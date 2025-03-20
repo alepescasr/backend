@@ -68,13 +68,14 @@ type ProductFormValues = z.infer<typeof formSchema>;
 
 interface ProductFormProps {
   initialData:
-    | (Omit<Product, "price" | "offerPrice" | "createdAt" | "updatedAt"> & {
+    | (Omit<
+        Product,
+        "price" | "offerPrice" | "costPrice" | "createdAt" | "updatedAt"
+      > & {
         images: Image[];
         price: string;
         offerPrice: string | null;
-        costPrice?: string | null;
-        code?: string | null;
-        calibration?: string | null;
+        costPrice: string | null;
         createdAt: string;
         updatedAt: string;
         color?: Color | null;

@@ -3,7 +3,7 @@ import mercadopago from "mercadopago";
 import { NextRequest, NextResponse } from "next/server";
 
 mercadopago.configure({
-  access_token: process.env.NEXT_ACCESS_TOKEN!,
+  access_token: process.env.NEXT_ACCESS_TOKEN_MERCADO_PAGO!,
 });
 
 const corsHeaders = {

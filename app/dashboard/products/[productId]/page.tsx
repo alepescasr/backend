@@ -31,6 +31,7 @@ export default async function ProductPage({
         ...product,
         price: product.price.toString(),
         offerPrice: product.offerPrice ? product.offerPrice.toString() : null,
+        costPrice: product.costPrice ? product.costPrice.toString() : null,
         createdAt: product.createdAt.toISOString(),
         updatedAt: product.updatedAt.toISOString(),
       }
