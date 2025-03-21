@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs";
 import prismadb from "@/lib/prismadb";
 
+// Interfaz para los metadatos públicos de Clerk
+interface PublicMetadata {
+  role?: string;
+}
+
 // Valores por defecto para la configuración
 const DEFAULT_SETTINGS = {
   shippingFee: 2000,
@@ -31,22 +36,21 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   try {
-    const { userId } = auth();
+    const { userId, sessionClaims } = auth();
     const body = await req.json();
 
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 403 });
     }
 
-    // Verificar que el usuario sea administrador
-    const user = await prismadb.user.findUnique({
-      where: {
-        id: userId,
-      },
-    });
+    // Verificar que el usuario sea administrador usando metadatos de Clerk
+    const publicMetadata = sessionClaims?.public as PublicMetadata;
+    const role = publicMetadata?.role;
 
-    if (user?.role !== "admin") {
-      return new NextResponse("Unauthorized", { status: 403 });
+    if (role !== "admin") {
+      return new NextResponse("Unauthorized - Admin access required", {
+        status: 403,
+      });
     }
 
     // Validar los datos recibidos

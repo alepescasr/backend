@@ -10,32 +10,29 @@ interface PublicMetadata {
 
 export async function GET(
   req: Request,
-  { params }: { params: { subcategoryId: string } }
+  { params }: { params: { postId: string } }
 ) {
   try {
-    if (!params.subcategoryId) {
-      return new NextResponse("Subcategory id is required", { status: 400 });
+    if (!params.postId) {
+      return new NextResponse("Post id is required", { status: 400 });
     }
 
-    const subcategory = await prismadb.subcategory.findUnique({
+    const post = await prismadb.post.findUnique({
       where: {
-        id: params.subcategoryId,
-      },
-      include: {
-        category: true,
+        id: params.postId,
       },
     });
 
-    return NextResponse.json(subcategory);
+    return NextResponse.json(post);
   } catch (error) {
-    console.log("[SUBCATEGORY_GET]", error);
+    console.log("[POST_GET]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
 }
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { subcategoryId: string } }
+  { params }: { params: { postId: string } }
 ) {
   try {
     const { userId, sessionClaims } = auth();
@@ -55,37 +52,45 @@ export async function PATCH(
     }
 
     const body = await req.json();
+    const { imageUrl, link, description } = body;
 
-    const { name, categoryId } = body;
-
-    if (!name) {
-      return new NextResponse("Name is required", { status: 400 });
+    if (!imageUrl) {
+      return new NextResponse("Image URL is required", { status: 400 });
     }
 
-    if (!categoryId) {
-      return new NextResponse("Category id is required", { status: 400 });
+    if (!link) {
+      return new NextResponse("Link is required", { status: 400 });
     }
 
-    const subcategory = await prismadb.subcategory.update({
+    if (!description) {
+      return new NextResponse("Description is required", { status: 400 });
+    }
+
+    if (!params.postId) {
+      return new NextResponse("Post id is required", { status: 400 });
+    }
+
+    const post = await prismadb.post.update({
       where: {
-        id: params.subcategoryId,
+        id: params.postId,
       },
       data: {
-        name,
-        categoryId,
+        imageUrl,
+        link,
+        description,
       },
     });
 
-    return NextResponse.json(subcategory);
+    return NextResponse.json(post);
   } catch (error) {
-    console.log("[SUBCATEGORY_PATCH]", error);
+    console.log("[POST_PATCH]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
 }
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { subcategoryId: string } }
+  { params }: { params: { postId: string } }
 ) {
   try {
     const { userId, sessionClaims } = auth();
@@ -104,33 +109,19 @@ export async function DELETE(
       });
     }
 
-    if (!params.subcategoryId) {
-      return new NextResponse("Subcategory id is required", { status: 400 });
+    if (!params.postId) {
+      return new NextResponse("Post id is required", { status: 400 });
     }
 
-    // Check if there are any products using this subcategory
-    const productsUsingSubcategory = await prismadb.product.findFirst({
+    const post = await prismadb.post.delete({
       where: {
-        subcategoryId: params.subcategoryId,
+        id: params.postId,
       },
     });
 
-    if (productsUsingSubcategory) {
-      return new NextResponse(
-        "Cannot delete subcategory that is being used by products",
-        { status: 400 }
-      );
-    }
-
-    const subcategory = await prismadb.subcategory.delete({
-      where: {
-        id: params.subcategoryId,
-      },
-    });
-
-    return NextResponse.json(subcategory);
+    return NextResponse.json(post);
   } catch (error) {
-    console.log("[SUBCATEGORY_DELETE]", error);
+    console.log("[POST_DELETE]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
 }

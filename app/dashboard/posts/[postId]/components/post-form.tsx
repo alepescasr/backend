@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import { Trash } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { Category } from "@prisma/client";
+import { Post } from "@prisma/client";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,68 +19,60 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { Heading } from "@/components/ui/heading";
 import { AlertModal } from "@/components/modals/alert-modal";
 import ImageUpload from "@/components/ui/image-upload";
+import { Textarea } from "@/components/ui/textarea";
 
 const formSchema = z.object({
-  name: z.string().min(1),
-  title: z.string().optional(),
-  imageUrl: z.string().optional(),
+  imageUrl: z.string().min(1),
+  link: z.string().min(1),
+  description: z.string().min(1),
 });
 
-type CategoryFormValues = z.infer<typeof formSchema>;
+type PostFormValues = z.infer<typeof formSchema>;
 
-interface CategoryFormProps {
-  initialData: Category | null;
+interface PostFormProps {
+  initialData: Post | null;
 }
 
-export const CategoryForm: React.FC<CategoryFormProps> = ({ initialData }) => {
+export const PostForm: React.FC<PostFormProps> = ({ initialData }) => {
   const params = useParams();
   const router = useRouter();
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const title = initialData ? "Editar categoría" : "Crear categoría";
+  const title = initialData ? "Editar post" : "Crear post";
   const description = initialData
-    ? "Editar una categoría existente"
-    : "Añadir una nueva categoría";
-  const toastMessage = initialData
-    ? "Categoría actualizada."
-    : "Categoría creada.";
+    ? "Editar un post existente"
+    : "Crear un nuevo post";
+  const toastMessage = initialData ? "Post actualizado." : "Post creado.";
   const action = initialData ? "Guardar cambios" : "Crear";
 
-  const form = useForm<CategoryFormValues>({
+  const form = useForm<PostFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData
-      ? {
-          name: initialData.name,
-          title: initialData.title || "",
-          imageUrl: initialData.imageUrl || "",
-        }
-      : {
-          name: "",
-          title: "",
-          imageUrl: "",
-        },
+    defaultValues: initialData || {
+      imageUrl: "",
+      link: "",
+      description: "",
+    },
   });
 
-  const onSubmit = async (data: CategoryFormValues) => {
+  const onSubmit = async (data: PostFormValues) => {
     try {
       setLoading(true);
       if (initialData) {
-        await axios.patch(`/api/categories/${initialData.id}`, data);
+        await axios.patch(`/api/posts/${params.postId}`, data);
       } else {
-        await axios.post(`/api/categories`, data);
+        await axios.post("/api/posts", data);
       }
       router.refresh();
-      router.push(`/dashboard/categories`);
+      router.push("/dashboard/posts");
       toast.success(toastMessage);
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Algo salió mal.");
     } finally {
       setLoading(false);
@@ -90,14 +82,12 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ initialData }) => {
   const onDelete = async () => {
     try {
       setLoading(true);
-      await axios.delete(`/api/categories/${initialData?.id}`);
+      await axios.delete(`/api/posts/${params.postId}`);
       router.refresh();
-      router.push(`/dashboard/categories`);
-      toast.success("Categoría eliminada.");
-    } catch (error: any) {
-      toast.error(
-        "Asegúrate de eliminar primero todos los productos que usan esta categoría."
-      );
+      router.push("/dashboard/posts");
+      toast.success("Post eliminado.");
+    } catch (error) {
+      toast.error("Algo salió mal.");
     } finally {
       setLoading(false);
       setOpen(false);
@@ -118,7 +108,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ initialData }) => {
           <Button
             disabled={loading}
             variant="destructive"
-            size="sm"
+            size="icon"
             onClick={() => setOpen(true)}
           >
             <Trash className="h-4 w-4" />
@@ -136,7 +126,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ initialData }) => {
             name="imageUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Imagen (opcional)</FormLabel>
+                <FormLabel>Imagen</FormLabel>
                 <FormControl>
                   <ImageUpload
                     value={field.value ? [field.value] : []}
@@ -145,53 +135,46 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ initialData }) => {
                     onRemove={() => field.onChange("")}
                   />
                 </FormControl>
-                <FormDescription>
-                  Imagen para mostrar como banner de la categoría
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <div className="grid grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-8">
             <FormField
               control={form.control}
-              name="name"
+              name="link"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre</FormLabel>
+                  <FormLabel>Link</FormLabel>
                   <FormControl>
                     <Input
                       disabled={loading}
-                      placeholder="Nombre de la categoría"
+                      placeholder="https://instagram.com/post/123"
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Título (opcional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={loading}
-                      placeholder="Título para mostrar en el banner"
-                      {...field}
-                      value={field.value || ""}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Texto para mostrar sobre la imagen de banner
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </div>
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Descripción</FormLabel>
+                <FormControl>
+                  <Textarea
+                    disabled={loading}
+                    placeholder="Descripción del post..."
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <Button disabled={loading} className="ml-auto" type="submit">
             {action}
           </Button>

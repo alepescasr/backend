@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs";
+import { auth, currentUser } from "@clerk/nextjs";
 
 import prismadb from "@/lib/prismadb";
+import { isCurrentUserAdmin, getCurrentUserRole } from "@/lib/auth-utils";
+
+// Interfaz para los metadatos públicos de Clerk
+interface PublicMetadata {
+  role?: string;
+}
 
 export async function GET(
   req: Request,
@@ -35,26 +41,34 @@ export async function PATCH(
   try {
     const { userId } = auth();
 
-    // Check if user is authenticated and has admin role
+    // Check if user is authenticated
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 403 });
     }
 
-    // Verify user is an admin
-    const user = await prismadb.user.findUnique({
-      where: {
-        id: userId,
-      },
+    // Verificar si el usuario es administrador
+    const isAdmin = await isCurrentUserAdmin();
+    const userRole = await getCurrentUserRole();
+
+    console.log("🔒 Verificación de autorización para PATCH:", {
+      userId,
+      isAdmin,
+      userRole,
     });
 
-    if (!user || user.role !== "admin") {
-      return new NextResponse("Unauthorized - Admin access required", {
-        status: 403,
-      });
+    if (!isAdmin) {
+      return new NextResponse(
+        `Unauthorized - Admin access required (Role: ${
+          userRole || "undefined"
+        })`,
+        {
+          status: 403,
+        }
+      );
     }
 
     const body = await req.json();
-    const { name } = body;
+    const { name, title, imageUrl } = body;
 
     if (!name) {
       return new NextResponse("Name is required", { status: 400 });
@@ -70,6 +84,8 @@ export async function PATCH(
       },
       data: {
         name,
+        title,
+        imageUrl,
       },
     });
 
@@ -87,22 +103,29 @@ export async function DELETE(
   try {
     const { userId } = auth();
 
-    // Check if user is authenticated and has admin role
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 403 });
     }
 
-    // Verify user is an admin
-    const user = await prismadb.user.findUnique({
-      where: {
-        id: userId,
-      },
+    // Verificar si el usuario es administrador
+    const isAdmin = await isCurrentUserAdmin();
+    const userRole = await getCurrentUserRole();
+
+    console.log("🔒 Verificación de autorización para DELETE:", {
+      userId,
+      isAdmin,
+      userRole,
     });
 
-    if (!user || user.role !== "admin") {
-      return new NextResponse("Unauthorized - Admin access required", {
-        status: 403,
-      });
+    if (!isAdmin) {
+      return new NextResponse(
+        `Unauthorized - Admin access required (Role: ${
+          userRole || "undefined"
+        })`,
+        {
+          status: 403,
+        }
+      );
     }
 
     if (!params.categoryId) {

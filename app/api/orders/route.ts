@@ -3,24 +3,25 @@ import { auth } from "@clerk/nextjs";
 
 import prismadb from "@/lib/prismadb";
 
+// Interfaz para los metadatos públicos de Clerk
+interface PublicMetadata {
+  role?: string;
+}
+
 export async function GET(req: Request) {
   try {
-    const { userId } = auth();
+    const { userId, sessionClaims } = auth();
 
     // Check if user is authenticated
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 403 });
     }
 
-    // Find the user in our database
-    const userRecord = await prismadb.user.findUnique({
-      where: {
-        id: userId,
-      },
-    });
+    // Verificar que el usuario sea administrador usando metadatos de Clerk
+    // const publicMetadata = sessionClaims?.public as PublicMetadata;
+    // const role = publicMetadata?.role;
 
-    // // Check if user exists and has admin role
-    // if (!userRecord || userRecord.role !== "admin") {
+    // if (role !== "admin") {
     //   return new NextResponse("Unauthorized - Admin access required", {
     //     status: 403,
     //   });

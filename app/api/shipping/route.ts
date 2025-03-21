@@ -1,16 +1,30 @@
 import { NextResponse } from "next/server";
 import prismadb from "@/lib/prismadb";
+import { auth } from "@clerk/nextjs";
 
-// Constante para el precio de envío
-const SHIPPING_FEE = 2000;
+// Precio de envío por defecto
+const DEFAULT_SHIPPING_FEE = 2000;
 
-export async function GET() {
+// Interfaz para los metadatos públicos de Clerk
+interface PublicMetadata {
+  role?: string;
+}
+
+export async function GET(req: Request) {
   try {
-    // Devolver el precio de envío fijo
+    // Obtener parámetros de consulta (por ejemplo, código postal, proveedor de envío)
+    const url = new URL(req.url);
+    const postalCode = url.searchParams.get("postalCode");
+    const shippingProvider = url.searchParams.get("provider");
+
+    // Por ahora, solo devolvemos el precio por defecto
+    // En el futuro, se puede implementar un cálculo basado en el código postal y proveedor
     return NextResponse.json({
-      shippingFee: SHIPPING_FEE,
+      shippingFee: DEFAULT_SHIPPING_FEE,
       currency: "ARS",
       description: "Envío estándar a todo el país",
+      postalCode: postalCode || null,
+      provider: shippingProvider || "standard",
     });
   } catch (error) {
     console.log("[SHIPPING_GET]", error);
@@ -18,10 +32,50 @@ export async function GET() {
   }
 }
 
+// Endpoint para calcular el precio de envío basado en los parámetros
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { postalCode, provider, weight, dimensions } = body;
+
+    // Validar que al menos el código postal esté presente
+    if (!postalCode) {
+      return new NextResponse("Postal code is required", { status: 400 });
+    }
+
+    // Aquí iría la lógica para calcular el precio de envío basado en los parámetros
+    // Por ahora, implementaremos una lógica simple basada en el código postal
+
+    let calculatedFee = DEFAULT_SHIPPING_FEE;
+
+    // Ejemplo: códigos postales de CABA tienen un precio menor
+    if (postalCode.startsWith("1")) {
+      calculatedFee = 1500;
+    }
+    // Ejemplo: códigos postales lejanos tienen un precio mayor
+    else if (parseInt(postalCode) > 8000) {
+      calculatedFee = 3000;
+    }
+
+    return NextResponse.json({
+      shippingFee: calculatedFee,
+      currency: "ARS",
+      description: `Envío a código postal ${postalCode}`,
+      postalCode,
+      provider: provider || "standard",
+      weight: weight || null,
+      dimensions: dimensions || null,
+    });
+  } catch (error) {
+    console.log("[SHIPPING_POST]", error);
+    return new NextResponse("Internal error", { status: 500 });
+  }
+}
+
 // Endpoint para actualizar el precio de envío (solo para administradores)
 export async function PATCH(req: Request) {
   try {
-    const { userId } = auth();
+    const { userId, sessionClaims } = auth();
     const body = await req.json();
 
     const { shippingFee } = body;
@@ -30,15 +84,14 @@ export async function PATCH(req: Request) {
       return new NextResponse("Unauthenticated", { status: 403 });
     }
 
-    // Verificar que el usuario sea administrador
-    const user = await prismadb.user.findUnique({
-      where: {
-        id: userId,
-      },
-    });
+    // Verificar que el usuario sea administrador usando metadatos de Clerk
+    const publicMetadata = sessionClaims?.public as PublicMetadata;
+    const role = publicMetadata?.role;
 
-    if (user?.role !== "admin") {
-      return new NextResponse("Unauthorized", { status: 403 });
+    if (role !== "admin") {
+      return new NextResponse("Unauthorized - Admin access required", {
+        status: 403,
+      });
     }
 
     if (!shippingFee || isNaN(Number(shippingFee))) {
@@ -47,7 +100,7 @@ export async function PATCH(req: Request) {
       });
     }
 
-    // Aquí podrías actualizar el precio de envío en una tabla de configuración
+    // Aquí podrías actualizar el precio de envío base en una tabla de configuración
     // Por ahora, solo devolvemos el nuevo precio como si se hubiera actualizado
     return NextResponse.json({
       shippingFee: Number(shippingFee),
@@ -58,6 +111,3 @@ export async function PATCH(req: Request) {
     return new NextResponse("Internal error", { status: 500 });
   }
 }
-
-// Importación necesaria para la autenticación
-import { auth } from "@clerk/nextjs";
