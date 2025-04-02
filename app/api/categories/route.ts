@@ -3,7 +3,6 @@ import { auth } from "@clerk/nextjs";
 
 import prismadb from "@/lib/prismadb";
 import { isCurrentUserAdmin, getCurrentUserRole } from "@/lib/auth-utils";
-import { createCorsHeaders } from "@/lib/cors-utils";
 
 // Interfaz para los metadatos públicos de Clerk
 interface PublicMetadata {
@@ -64,17 +63,15 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
-    // Obtener el origen de la petición
-    const origin = req.headers.get("origin");
-
-    // Crear cabeceras con CORS configurado
-    const headers = createCorsHeaders(origin);
-
     const categories = await prismadb.category.findMany({
       orderBy: {
         createdAt: "desc",
       },
     });
+
+    // Solo agregar la cabecera necesaria para Next.js, como en products
+    const headers = new Headers();
+    headers.set("Cache-Control", "no-store");
 
     return NextResponse.json(categories, {
       headers,
@@ -82,24 +79,6 @@ export async function GET(req: Request) {
     });
   } catch (error) {
     console.log("[CATEGORIES_GET]", error);
-    // También aplicar cabeceras CORS en caso de error
-    const origin = req.headers.get("origin");
-    const headers = createCorsHeaders(origin);
-
-    return new NextResponse("Internal error", {
-      status: 500,
-      headers,
-    });
+    return new NextResponse("Internal error", { status: 500 });
   }
-}
-
-// Añadir soporte para pre-vuelo CORS (OPTIONS)
-export async function OPTIONS(req: Request) {
-  const origin = req.headers.get("origin");
-  const headers = createCorsHeaders(origin);
-
-  return new NextResponse(null, {
-    status: 204, // No Content
-    headers,
-  });
 }

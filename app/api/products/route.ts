@@ -131,7 +131,14 @@ export async function GET(req: Request) {
       },
     });
 
-    return NextResponse.json(products);
+    // Configurar la cabecera Cache-Control para solucionar el error de Next.js
+    const headers = new Headers();
+    headers.set("Cache-Control", "no-store");
+
+    return NextResponse.json(products, {
+      headers,
+      status: 200,
+    });
   } catch (error) {
     console.log("[PRODUCTS_GET]", error);
     return new NextResponse("Internal error", { status: 500 });
