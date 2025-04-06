@@ -151,12 +151,23 @@ model Color {
 //   @@index([storeId])
 // }
 
+// Nuevo modelo para Billboard en la home
+model Billboard {
+  id        String   @id @default(uuid())
+  imageUrl  String // URL de la imagen
+  title     String // Título del banner
+  isActive  Boolean  @default(false) // Para activar/desactivar sin borrar
+  order     Int      @default(0) // Para ordenar los billboards
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // Nuevo modelo para Posts tipo Instagram
 model Post {
   id          String   @id @default(uuid())
-  imageUrl    String // URL de la imagen
-  link        String // Link para Instagram
-  description String // Descripción del post
+  description String   @db.Text
+  imageUrl    String
+  link        String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

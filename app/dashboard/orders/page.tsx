@@ -7,6 +7,37 @@ import prismadb from "@/lib/prismadb";
 
 import { OrderClient } from "./components/client";
 
+// Función para extraer información del cliente del JSON
+const extractClientInfo = (formData: any) => {
+  if (!formData) return { name: "No disponible", email: "No disponible" };
+
+  try {
+    // Parsear el formData si es una cadena
+    const data = typeof formData === "string" ? JSON.parse(formData) : formData;
+
+    // Extraer la información del cliente
+    const clientInfo = data.clientInfo || {};
+    const name = `${clientInfo.nombre || ""} ${
+      clientInfo.apellido || ""
+    }`.trim();
+    const email = clientInfo.email || "No disponible";
+    const phone = clientInfo.telefono || "No disponible";
+
+    return {
+      name: name || "Sin nombre",
+      email,
+      phone,
+    };
+  } catch (error) {
+    console.error("Error al procesar los datos del cliente:", error);
+    return {
+      name: "Error en datos",
+      email: "Error en datos",
+      phone: "Error en datos",
+    };
+  }
+};
+
 export default async function OrdersPage() {
   const { userId } = await auth();
 
@@ -27,22 +58,28 @@ export default async function OrdersPage() {
     },
   });
 
-  const formattedOrders = orders.map((item) => ({
-    id: item.id,
-    formData: item.formData
-      ? JSON.stringify(item.formData).substring(0, 50) + "..."
-      : "No hay datos",
-    products: item.orderItems
-      .map((orderItem) => orderItem.product.name)
-      .join(", "),
-    totalPrice: formatter.format(
-      item.orderItems.reduce((total, item) => {
-        return total + Number(item.product.price);
-      }, 0)
-    ),
-    isPaid: item.isPaid,
-    createdAt: format(item.createdAt, "dd/MM/yyyy"),
-  }));
+  const formattedOrders = orders.map((item) => {
+    // Extraer la información del cliente
+    const clientInfo = extractClientInfo(item.formData);
+
+    return {
+      id: item.id,
+      formData: item.formData ? JSON.stringify(item.formData) : "No hay datos",
+      clientName: clientInfo.name,
+      clientEmail: clientInfo.email,
+      clientPhone: clientInfo.phone,
+      products: item.orderItems
+        .map((orderItem) => orderItem.product.name)
+        .join(", "),
+      totalPrice: formatter.format(
+        item.orderItems.reduce((total, item) => {
+          return total + Number(item.product.price);
+        }, 0)
+      ),
+      isPaid: item.isPaid,
+      createdAt: format(item.createdAt, "dd/MM/yyyy"),
+    };
+  });
 
   return (
     <div className="flex-col">

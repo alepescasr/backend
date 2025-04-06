@@ -26,6 +26,14 @@ export async function POST(req: Request) {
       // });
     }
 
+    // Check if we already have 3 posts
+    const postCount = await prismadb.post.count();
+    if (postCount >= 3) {
+      return new NextResponse("Maximum number of posts (3) reached", {
+        status: 400,
+      });
+    }
+
     const body = await req.json();
     const { imageUrl, link, description } = body;
 

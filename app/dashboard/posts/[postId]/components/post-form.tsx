@@ -67,7 +67,21 @@ export const PostForm: React.FC<PostFormProps> = ({ initialData }) => {
       if (initialData) {
         await axios.patch(`/api/posts/${params.postId}`, data);
       } else {
-        await axios.post("/api/posts", data);
+        try {
+          await axios.post("/api/posts", data);
+        } catch (error: any) {
+          if (
+            error.response?.status === 400 &&
+            error.response?.data.includes("Maximum number of posts")
+          ) {
+            toast.error(
+              "No se pueden crear más de 3 posts. Por favor, elimine uno existente."
+            );
+            router.push("/dashboard/posts");
+            return;
+          }
+          throw error;
+        }
       }
       router.refresh();
       router.push("/dashboard/posts");

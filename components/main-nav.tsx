@@ -43,6 +43,11 @@ export function MainNav({
       active: pathname === `/dashboard/colors`,
     },
     {
+      href: `/dashboard/billboards`,
+      label: "Banners",
+      active: pathname === `/dashboard/billboards`,
+    },
+    {
       href: `/dashboard/posts`,
       label: "Posts",
       active: pathname === `/dashboard/posts`,

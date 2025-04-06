@@ -3,18 +3,18 @@ import { redirect } from "next/navigation";
 
 import prismadb from "@/lib/prismadb";
 
-import { PostForm } from "../[postId]/components/post-form";
+import { BillboardForm } from "../components/billboard-form";
 
-export default async function NewPostPage() {
+export default async function NewBillboardPage() {
   const { userId } = await auth();
 
   if (!userId) {
     redirect("/sign-in");
   }
 
-  // Check if already have 3 posts
-  const postCount = await prismadb.post.count();
-  const hasReachedLimit = postCount >= 3;
+  // Check if already have 3 billboards
+  const billboardCount = await prismadb.billboard.count();
+  const hasReachedLimit = billboardCount >= 3;
 
   return (
     <div className="flex-col">
@@ -26,12 +26,12 @@ export default async function NewPostPage() {
           >
             <p className="font-bold">Límite alcanzado</p>
             <p>
-              No se pueden crear más de 3 posts. Por favor, elimine uno
+              No se pueden crear más de 3 billboards. Por favor, elimine uno
               existente antes de crear uno nuevo.
             </p>
           </div>
         ) : (
-          <PostForm initialData={null} />
+          <BillboardForm initialData={null} />
         )}
       </div>
     </div>
