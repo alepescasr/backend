@@ -28,15 +28,41 @@ export async function POST(req: Request) {
     return new NextResponse("Cart items are required", { status: 400 });
   }
 
-  // Usar el costo de envío proporcionado por el frontend o usar el valor por defecto
-  const appliedShippingFee = shippingFee
-    ? Number(shippingFee)
-    : DEFAULT_SHIPPING_FEE;
+  // Intentar obtener el costo de envío del formData si está disponible
+  let shippingCostFromForm = null;
+  if (orderFormData && typeof orderFormData === "object") {
+    shippingCostFromForm =
+      orderFormData.shippingCost !== undefined
+        ? Number(orderFormData.shippingCost)
+        : null;
+  }
+
+  // Usar el costo de envío en este orden de prioridad:
+  // 1. Del formData (shippingCost)
+  // 2. Del parámetro específico (shippingFee)
+  // 3. Valor por defecto
+  const appliedShippingFee =
+    shippingCostFromForm !== null && !isNaN(shippingCostFromForm)
+      ? shippingCostFromForm
+      : shippingFee
+      ? Number(shippingFee)
+      : DEFAULT_SHIPPING_FEE;
 
   // Validar que el costo de envío sea un número válido
   if (isNaN(appliedShippingFee)) {
     return new NextResponse("Invalid shipping fee", { status: 400 });
   }
+
+  console.log(
+    "Shipping fee applied:",
+    appliedShippingFee,
+    "Source:",
+    shippingCostFromForm !== null
+      ? "formData.shippingCost"
+      : shippingFee
+      ? "shippingFee parameter"
+      : "default value"
+  );
 
   const productIds = cartItems.map(
     (item: { productId: string }) => item.productId
