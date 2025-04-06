@@ -1,3 +1,5 @@
+"use client";
+
 import * as z from "zod";
 import { useState } from "react";
 import { Billboard } from "@prisma/client";
