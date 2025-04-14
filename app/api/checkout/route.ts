@@ -96,7 +96,7 @@ export async function POST(req: Request) {
       subtotal += price * item.quantity;
 
       items.push({
-        title: product.name,
+        title: "Productos AlePesca",
         unit_price: price,
         quantity: item.quantity,
       });
