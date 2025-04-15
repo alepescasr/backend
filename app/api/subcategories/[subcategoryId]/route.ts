@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs";
 
 import prismadb from "@/lib/prismadb";
+import { isCurrentUserAdmin, getCurrentUserRole } from "@/lib/auth-utils";
 
 // Interfaz para los metadatos públicos de Clerk
 interface PublicMetadata {
@@ -38,20 +39,31 @@ export async function PATCH(
   { params }: { params: { subcategoryId: string } }
 ) {
   try {
-    const { userId, sessionClaims } = auth();
+    const { userId } = auth();
 
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 403 });
     }
 
-    // Verificar que el usuario sea administrador usando metadatos de Clerk
-    const publicMetadata = sessionClaims?.public as PublicMetadata;
-    const role = publicMetadata?.role;
+    // Verificar si el usuario es administrador usando las funciones de utilidad
+    const isAdmin = await isCurrentUserAdmin();
+    const userRole = await getCurrentUserRole();
 
-    if (role !== "admin") {
-      return new NextResponse("Unauthorized - Admin access required", {
-        status: 403,
-      });
+    console.log("🔒 Verificación de autorización para PATCH subcategory:", {
+      userId,
+      isAdmin,
+      userRole,
+    });
+
+    if (!isAdmin) {
+      return new NextResponse(
+        `Unauthorized - Admin access required (Role: ${
+          userRole || "undefined"
+        })`,
+        {
+          status: 403,
+        }
+      );
     }
 
     const body = await req.json();
@@ -88,20 +100,31 @@ export async function DELETE(
   { params }: { params: { subcategoryId: string } }
 ) {
   try {
-    const { userId, sessionClaims } = auth();
+    const { userId } = auth();
 
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 403 });
     }
 
-    // Verificar que el usuario sea administrador usando metadatos de Clerk
-    const publicMetadata = sessionClaims?.public as PublicMetadata;
-    const role = publicMetadata?.role;
+    // Verificar si el usuario es administrador usando las funciones de utilidad
+    const isAdmin = await isCurrentUserAdmin();
+    const userRole = await getCurrentUserRole();
 
-    if (role !== "admin") {
-      return new NextResponse("Unauthorized - Admin access required", {
-        status: 403,
-      });
+    console.log("🔒 Verificación de autorización para DELETE subcategory:", {
+      userId,
+      isAdmin,
+      userRole,
+    });
+
+    if (!isAdmin) {
+      return new NextResponse(
+        `Unauthorized - Admin access required (Role: ${
+          userRole || "undefined"
+        })`,
+        {
+          status: 403,
+        }
+      );
     }
 
     if (!params.subcategoryId) {
@@ -116,6 +139,10 @@ export async function DELETE(
     });
 
     if (productsUsingSubcategory) {
+      console.log("[SUBCATEGORY_DELETE] Cannot delete: Used by products", {
+        subcategoryId: params.subcategoryId,
+        productId: productsUsingSubcategory.id,
+      });
       return new NextResponse(
         "Cannot delete subcategory that is being used by products",
         { status: 400 }

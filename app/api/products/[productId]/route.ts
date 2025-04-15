@@ -144,6 +144,24 @@ export async function PATCH(
       },
     });
 
+    // Eliminar imágenes duplicadas antes de guardarlas
+    const uniqueImages = images.reduce(
+      (acc: { url: string }[], current: { url: string }) => {
+        // Verificar si la URL ya existe en el array acumulado
+        const exists = acc.some((img) => img.url === current.url);
+        if (!exists) {
+          acc.push(current);
+        } else {
+          console.log(
+            "[PRODUCT_PATCH] Imagen duplicada detectada y eliminada:",
+            current.url
+          );
+        }
+        return acc;
+      },
+      []
+    );
+
     // Create new images
     const product = await prismadb.product.update({
       where: {
@@ -152,7 +170,7 @@ export async function PATCH(
       data: {
         images: {
           createMany: {
-            data: [...images.map((image: { url: string }) => image)],
+            data: uniqueImages,
           },
         },
       },

@@ -68,6 +68,24 @@ export async function POST(req: Request) {
       return new NextResponse("Subcategory ID is required", { status: 400 });
     }
 
+    // Eliminar imágenes duplicadas antes de guardarlas
+    const uniqueImages = images.reduce(
+      (acc: { url: string }[], current: { url: string }) => {
+        // Verificar si la URL ya existe en el array acumulado
+        const exists = acc.some((img) => img.url === current.url);
+        if (!exists) {
+          acc.push(current);
+        } else {
+          console.log(
+            "[PRODUCTS_POST] Imagen duplicada detectada y eliminada:",
+            current.url
+          );
+        }
+        return acc;
+      },
+      []
+    );
+
     const product = await prismadb.product.create({
       data: {
         name,
@@ -90,7 +108,7 @@ export async function POST(req: Request) {
         costPrice,
         images: {
           createMany: {
-            data: [...images.map((image: { url: string }) => image)],
+            data: uniqueImages,
           },
         },
       },

@@ -31,7 +31,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
   const onUpload = (result: any) => {
     console.log("Cloudinary upload result:", result);
-    onChange(result.info.secure_url);
+    const newUrl = result.info.secure_url;
+    if (value.includes(newUrl)) {
+      toast.error("Esta imagen ya ha sido subida");
+      setIsUploading(false);
+      return;
+    }
+    onChange(newUrl);
     setIsUploading(false);
     toast.success("Imagen subida correctamente");
   };
@@ -54,6 +60,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       </div>
     );
   }
+
+  const uniqueUploadId = `ecommerce-${Date.now()}-${Math.random()
+    .toString(36)
+    .substring(2, 9)}`;
 
   return (
     <div>
@@ -82,11 +92,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         onError={onError}
         uploadPreset="ecommerce_unsigned"
         options={{
-          maxFiles: 5,
+          maxFiles: 1,
           sources: ["local", "url", "camera"],
           resourceType: "image",
-          publicId: `ecommerce-${Date.now()}`,
+          publicId: uniqueUploadId,
           folder: "ecommerce-admin",
+          clientAllowedFormats: ["png", "gif", "jpeg", "jpg", "webp"],
+          maxFileSize: 10000000,
         }}
       >
         {({ open }) => {

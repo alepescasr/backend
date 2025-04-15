@@ -306,9 +306,18 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                   <ImageUpload
                     value={field.value.map((image) => image.url)}
                     disabled={loading}
-                    onChange={(url) =>
-                      field.onChange([...field.value, { url }])
-                    }
+                    onChange={(url) => {
+                      // Verificar si la imagen ya existe antes de añadirla
+                      if (!field.value.some((img) => img.url === url)) {
+                        field.onChange([...field.value, { url }]);
+                      } else {
+                        console.log(
+                          "Imagen duplicada detectada en ProductForm:",
+                          url
+                        );
+                        // No necesitamos mostrar otro mensaje ya que ImageUpload ya lo hace
+                      }
+                    }}
                     onRemove={(url) =>
                       field.onChange([
                         ...field.value.filter((current) => current.url !== url),

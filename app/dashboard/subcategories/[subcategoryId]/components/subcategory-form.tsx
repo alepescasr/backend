@@ -86,9 +86,21 @@ export const SubcategoryForm: React.FC<SubcategoryFormProps> = ({
       router.refresh();
       router.push("/dashboard/subcategories");
       toast.success(toastMessage);
-    } catch (error) {
-      toast.error("Algo salió mal.");
-      console.error(error);
+    } catch (error: any) {
+      // Manejo de errores mejorado
+      if (error.response) {
+        // Si hay una respuesta de error del servidor, mostrar el mensaje
+        toast.error(`Error: ${error.response.data || "Algo salió mal"}`);
+        console.error(`Error ${error.response.status}:`, error.response.data);
+      } else if (error.request) {
+        // Si la solicitud se realizó pero no se recibió respuesta
+        toast.error("No se pudo conectar con el servidor.");
+        console.error("Error de conexión:", error.request);
+      } else {
+        // Error inesperado
+        toast.error("Algo salió mal.");
+        console.error("Error:", error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -101,10 +113,27 @@ export const SubcategoryForm: React.FC<SubcategoryFormProps> = ({
       router.refresh();
       router.push("/dashboard/subcategories");
       toast.success("Subcategoría eliminada.");
-    } catch (error) {
-      toast.error(
-        "Asegúrate de haber eliminado todos los productos que usan esta subcategoría."
-      );
+    } catch (error: any) {
+      // Manejo de errores mejorado
+      if (error.response && error.response.status === 400) {
+        // Mostrar mensaje específico para error de restricción de productos
+        toast.error(
+          "No se puede eliminar la subcategoría porque está siendo utilizada por productos."
+        );
+        console.error("Error 400:", error.response.data);
+      } else if (error.response && error.response.status === 403) {
+        // Error de autorización
+        toast.error("No tienes permisos para eliminar esta subcategoría.");
+        console.error("Error 403:", error.response.data);
+      } else if (error.response) {
+        // Otros errores con respuesta del servidor
+        toast.error(`Error: ${error.response.data || "Algo salió mal"}`);
+        console.error(`Error ${error.response.status}:`, error.response.data);
+      } else {
+        // Errores de conexión u otro tipo
+        toast.error("Ocurrió un error al eliminar la subcategoría.");
+        console.error("Error:", error);
+      }
     } finally {
       setLoading(false);
       setOpen(false);
