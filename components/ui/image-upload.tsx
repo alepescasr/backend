@@ -29,17 +29,66 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     setIsMounted(true);
   }, []);
 
+  // Función para extraer el ID de una URL de Cloudinary
+  const extractImageId = (url: string): string => {
+    // Extraer solo el nombre del archivo sin parámetros
+    const parts = url.split("/");
+    const filename = parts[parts.length - 1].split(".")[0];
+    return filename;
+  };
+
+  // Función para verificar si una imagen ya existe por su contenido (no por URL exacta)
+  const isDuplicateImage = (
+    newUrl: string,
+    existingUrls: string[]
+  ): boolean => {
+    if (!newUrl) return false;
+
+    // Para URLs que no son de Cloudinary, usar comparación exacta
+    if (!newUrl.includes("cloudinary")) {
+      return existingUrls.includes(newUrl);
+    }
+
+    // Para URLs de Cloudinary, extraer el ID y comparar
+    const newId = extractImageId(newUrl);
+
+    // Si el ID es muy corto, podría ser un formato diferente, usar la comparación completa
+    if (newId.length < 5) {
+      return existingUrls.includes(newUrl);
+    }
+
+    // Verificar si alguno de los IDs existentes coincide
+    return existingUrls.some((existingUrl) => {
+      const existingId = extractImageId(existingUrl);
+      return existingId === newId;
+    });
+  };
+
   const onUpload = (result: any) => {
     console.log("Cloudinary upload result:", result);
-    const newUrl = result.info.secure_url;
-    if (value.includes(newUrl)) {
-      toast.error("Esta imagen ya ha sido subida");
-      setIsUploading(false);
-      return;
+    // Verificar si se subieron múltiples archivos o uno solo
+    if (Array.isArray(result.info.secure_url)) {
+      // Múltiples archivos
+      result.info.secure_url.forEach((url: string) => {
+        if (!isDuplicateImage(url, value)) {
+          onChange(url);
+          toast.success("Imagen subida correctamente");
+        } else {
+          toast.error("Una de las imágenes ya fue subida anteriormente");
+        }
+      });
+    } else {
+      // Un solo archivo
+      const newUrl = result.info.secure_url;
+
+      if (isDuplicateImage(newUrl, value)) {
+        toast.error("Esta imagen ya ha sido subida");
+      } else {
+        onChange(newUrl);
+        toast.success("Imagen subida correctamente");
+      }
     }
-    onChange(newUrl);
     setIsUploading(false);
-    toast.success("Imagen subida correctamente");
   };
 
   const onError = (error: any) => {
@@ -92,13 +141,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         onError={onError}
         uploadPreset="ecommerce_unsigned"
         options={{
-          maxFiles: 1,
+          maxFiles: 5, // Aumentar a 5 imágenes a la vez
           sources: ["local", "url", "camera"],
           resourceType: "image",
           publicId: uniqueUploadId,
           folder: "ecommerce-admin",
           clientAllowedFormats: ["png", "gif", "jpeg", "jpg", "webp"],
           maxFileSize: 10000000,
+          multiple: true, // Habilitar selección múltiple
         }}
       >
         {({ open }) => {
@@ -114,7 +164,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               onClick={onClick}
             >
               <ImagePlus className="h-4 w-4 mr-2" />
-              {isUploading ? "Subiendo..." : "Subir imagen"}
+              {isUploading ? "Subiendo..." : "Subir imágenes"}
             </Button>
           );
         }}

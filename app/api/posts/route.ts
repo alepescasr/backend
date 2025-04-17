@@ -1,37 +1,39 @@
 import { NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs";
 
 import prismadb from "@/lib/prismadb";
+import { isCurrentUserAdmin, getCurrentUserRole } from "@/lib/auth-utils";
+
+// Límite máximo de posts que se pueden crear
+const MAX_POSTS = 3;
 
 export async function POST(req: Request) {
   try {
-    const { userId } = await auth();
-    const user = await currentUser();
+    const { userId } = auth();
 
-    // Check if user is authenticated
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 403 });
     }
 
-    // Verificar si el usuario tiene el rol de admin en Clerk
-    const isAdmin =
-      user?.publicMetadata?.role === "admin" ||
-      user?.privateMetadata?.role === "admin";
+    // Verificar si el usuario es administrador
+    const isAdmin = await isCurrentUserAdmin();
+    const userRole = await getCurrentUserRole();
 
-    // Para simplificar, permitimos a todos los usuarios autenticados crear posts
+    console.log("🔒 Verificación de autorización para POST nuevo post:", {
+      userId,
+      isAdmin,
+      userRole,
+    });
+
     if (!isAdmin) {
-      // Temporalmente permitimos a todos los usuarios crear posts
-      // return new NextResponse("Unauthorized - Admin access required", {
-      //   status: 403,
-      // });
-    }
-
-    // Check if we already have 3 posts
-    const postCount = await prismadb.post.count();
-    if (postCount >= 3) {
-      return new NextResponse("Maximum number of posts (3) reached", {
-        status: 400,
-      });
+      return new NextResponse(
+        `Unauthorized - Admin access required (Role: ${
+          userRole || "undefined"
+        })`,
+        {
+          status: 403,
+        }
+      );
     }
 
     const body = await req.json();
@@ -49,6 +51,15 @@ export async function POST(req: Request) {
       return new NextResponse("Description is required", { status: 400 });
     }
 
+    // Verificar el límite de posts
+    const postsCount = await prismadb.post.count();
+    if (postsCount >= MAX_POSTS) {
+      return new NextResponse(
+        `Maximum number of posts (${MAX_POSTS}) reached. Delete existing posts before creating new ones.`,
+        { status: 400 }
+      );
+    }
+
     const post = await prismadb.post.create({
       data: {
         imageUrl,
@@ -57,9 +68,10 @@ export async function POST(req: Request) {
       },
     });
 
+    console.log("[POST_CREATE] Post creado con éxito:", post.id);
     return NextResponse.json(post);
   } catch (error) {
-    console.log("[POSTS_POST]", error);
+    console.log("[POST_CREATE]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
 }

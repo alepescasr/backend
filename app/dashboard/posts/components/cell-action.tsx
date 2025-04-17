@@ -33,8 +33,32 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       await axios.delete(`/api/posts/${data.id}`);
       toast.success("Post eliminado.");
       router.refresh();
-    } catch (error) {
-      toast.error("Algo salió mal.");
+    } catch (error: any) {
+      console.error("Error al eliminar post:", error);
+
+      if (error.response) {
+        // Error con respuesta del servidor
+        const status = error.response.status;
+        const message = error.response.data || "Error desconocido";
+
+        if (status === 404) {
+          toast.error("El post no existe o ya fue eliminado.");
+        } else if (status === 403) {
+          toast.error("No tienes permisos para eliminar este post.");
+        } else {
+          toast.error(`Error: ${message}`);
+        }
+
+        console.error(`Error ${status}:`, message);
+      } else if (error.request) {
+        // Error de red sin respuesta
+        toast.error("No se pudo conectar con el servidor.");
+        console.error("Error de conexión:", error.request);
+      } else {
+        // Otro tipo de error
+        toast.error("Algo salió mal al eliminar el post.");
+        console.error("Error:", error.message);
+      }
     } finally {
       setOpen(false);
       setLoading(false);

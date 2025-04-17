@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs";
 
 import prismadb from "@/lib/prismadb";
+import { isCurrentUserAdmin, getCurrentUserRole } from "@/lib/auth-utils";
 
 // Interfaz para los metadatos públicos de Clerk
 interface PublicMetadata {
@@ -23,6 +24,10 @@ export async function GET(
       },
     });
 
+    if (!post) {
+      return new NextResponse("Post no encontrado", { status: 404 });
+    }
+
     return NextResponse.json(post);
   } catch (error) {
     console.log("[POST_GET]", error);
@@ -35,20 +40,32 @@ export async function PATCH(
   { params }: { params: { postId: string } }
 ) {
   try {
-    const { userId, sessionClaims } = auth();
+    const { userId } = auth();
 
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 403 });
     }
 
-    // Verificar que el usuario sea administrador usando metadatos de Clerk
-    const publicMetadata = sessionClaims?.public as PublicMetadata;
-    const role = publicMetadata?.role;
+    // Verificar si el usuario es administrador
+    const isAdmin = await isCurrentUserAdmin();
+    const userRole = await getCurrentUserRole();
 
-    if (role !== "admin") {
-      return new NextResponse("Unauthorized - Admin access required", {
-        status: 403,
-      });
+    console.log("🔒 Verificación de autorización para PATCH post:", {
+      userId,
+      isAdmin,
+      userRole,
+      postId: params.postId,
+    });
+
+    if (!isAdmin) {
+      return new NextResponse(
+        `Unauthorized - Admin access required (Role: ${
+          userRole || "undefined"
+        })`,
+        {
+          status: 403,
+        }
+      );
     }
 
     const body = await req.json();
@@ -70,6 +87,16 @@ export async function PATCH(
       return new NextResponse("Post id is required", { status: 400 });
     }
 
+    // Verificar que el post exista
+    const existingPost = await prismadb.post.findUnique({
+      where: { id: params.postId },
+    });
+
+    if (!existingPost) {
+      console.log("[POST_PATCH] Post no encontrado:", params.postId);
+      return new NextResponse("Post no encontrado", { status: 404 });
+    }
+
     const post = await prismadb.post.update({
       where: {
         id: params.postId,
@@ -81,6 +108,7 @@ export async function PATCH(
       },
     });
 
+    console.log("[POST_PATCH] Post actualizado con éxito:", post.id);
     return NextResponse.json(post);
   } catch (error) {
     console.log("[POST_PATCH]", error);
@@ -93,24 +121,46 @@ export async function DELETE(
   { params }: { params: { postId: string } }
 ) {
   try {
-    const { userId, sessionClaims } = auth();
+    const { userId } = auth();
 
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 403 });
     }
 
-    // Verificar que el usuario sea administrador usando metadatos de Clerk
-    const publicMetadata = sessionClaims?.public as PublicMetadata;
-    const role = publicMetadata?.role;
+    // Verificar si el usuario es administrador
+    const isAdmin = await isCurrentUserAdmin();
+    const userRole = await getCurrentUserRole();
 
-    if (role !== "admin") {
-      return new NextResponse("Unauthorized - Admin access required", {
-        status: 403,
-      });
+    console.log("🔒 Verificación de autorización para DELETE post:", {
+      userId,
+      isAdmin,
+      userRole,
+      postId: params.postId,
+    });
+
+    if (!isAdmin) {
+      return new NextResponse(
+        `Unauthorized - Admin access required (Role: ${
+          userRole || "undefined"
+        })`,
+        {
+          status: 403,
+        }
+      );
     }
 
     if (!params.postId) {
       return new NextResponse("Post id is required", { status: 400 });
+    }
+
+    // Verificar que el post exista
+    const existingPost = await prismadb.post.findUnique({
+      where: { id: params.postId },
+    });
+
+    if (!existingPost) {
+      console.log("[POST_DELETE] Post no encontrado:", params.postId);
+      return new NextResponse("Post no encontrado", { status: 404 });
     }
 
     const post = await prismadb.post.delete({
@@ -119,6 +169,7 @@ export async function DELETE(
       },
     });
 
+    console.log("[POST_DELETE] Post eliminado con éxito:", post.id);
     return NextResponse.json(post);
   } catch (error) {
     console.log("[POST_DELETE]", error);

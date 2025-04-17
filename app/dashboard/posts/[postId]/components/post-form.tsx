@@ -86,8 +86,32 @@ export const PostForm: React.FC<PostFormProps> = ({ initialData }) => {
       router.refresh();
       router.push("/dashboard/posts");
       toast.success(toastMessage);
-    } catch (error) {
-      toast.error("Algo salió mal.");
+    } catch (error: any) {
+      console.error("Error al guardar post:", error);
+
+      if (error.response) {
+        // Error con respuesta del servidor
+        const status = error.response.status;
+        const message = error.response.data || "Error desconocido";
+
+        if (status === 404) {
+          toast.error("El post no existe o ya fue eliminado.");
+        } else if (status === 403) {
+          toast.error("No tienes permisos para modificar este post.");
+        } else {
+          toast.error(`Error: ${message}`);
+        }
+
+        console.error(`Error ${status}:`, message);
+      } else if (error.request) {
+        // Error de red sin respuesta
+        toast.error("No se pudo conectar con el servidor.");
+        console.error("Error de conexión:", error.request);
+      } else {
+        // Otro tipo de error
+        toast.error("Algo salió mal al guardar el post.");
+        console.error("Error:", error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -100,8 +124,32 @@ export const PostForm: React.FC<PostFormProps> = ({ initialData }) => {
       router.refresh();
       router.push("/dashboard/posts");
       toast.success("Post eliminado.");
-    } catch (error) {
-      toast.error("Algo salió mal.");
+    } catch (error: any) {
+      console.error("Error al eliminar post:", error);
+
+      if (error.response) {
+        // Error con respuesta del servidor
+        const status = error.response.status;
+        const message = error.response.data || "Error desconocido";
+
+        if (status === 404) {
+          toast.error("El post no existe o ya fue eliminado.");
+        } else if (status === 403) {
+          toast.error("No tienes permisos para eliminar este post.");
+        } else {
+          toast.error(`Error: ${message}`);
+        }
+
+        console.error(`Error ${status}:`, message);
+      } else if (error.request) {
+        // Error de red sin respuesta
+        toast.error("No se pudo conectar con el servidor.");
+        console.error("Error de conexión:", error.request);
+      } else {
+        // Otro tipo de error
+        toast.error("Algo salió mal al eliminar el post.");
+        console.error("Error:", error.message);
+      }
     } finally {
       setLoading(false);
       setOpen(false);
@@ -145,8 +193,19 @@ export const PostForm: React.FC<PostFormProps> = ({ initialData }) => {
                   <ImageUpload
                     value={field.value ? [field.value] : []}
                     disabled={loading}
-                    onChange={(url) => field.onChange(url)}
-                    onRemove={() => field.onChange("")}
+                    onChange={(url) => {
+                      if (url && url.trim() !== "") {
+                        console.log(
+                          "Asignando nueva URL de imagen al post:",
+                          url
+                        );
+                        field.onChange(url);
+                      }
+                    }}
+                    onRemove={() => {
+                      console.log("Eliminando imagen del post");
+                      field.onChange("");
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
