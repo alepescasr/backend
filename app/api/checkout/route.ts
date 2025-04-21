@@ -14,7 +14,8 @@ const DEFAULT_SHIPPING_FEE = 2000;
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, x-payment-method",
 };
 
 export async function OPTIONS() {
@@ -24,7 +25,19 @@ export async function OPTIONS() {
 export async function POST(req: Request) {
   const { cartItems, orderFormData, shippingFee } = await req.json();
 
+  // Agregar log inicial para depuración
+  console.log("==== CHECKOUT API - INICIO DE PROCESO ====");
+  console.log("Datos recibidos:", {
+    cartItemsCount: cartItems?.length,
+    paymentMethod: orderFormData?.paymentMethod || "No especificado",
+    orderFormData: orderFormData
+      ? JSON.stringify(orderFormData).slice(0, 200) + "..."
+      : "No disponible",
+    shippingFee,
+  });
+
   if (!cartItems || cartItems.length === 0) {
+    console.log("ERROR: No se recibieron items en el carrito");
     return new NextResponse("Cart items are required", { status: 400 });
   }
 
@@ -141,10 +154,45 @@ export async function POST(req: Request) {
     console.log("Campos de envío no disponibles aún:", error);
   }
 
+  console.log("Datos de la orden a crear:", {
+    itemsCount: cartItems.length,
+    shippingFee: appliedShippingFee,
+    subtotal,
+    totalAmount,
+    paymentMethod: orderFormData?.paymentMethod,
+  });
+
   const order = await prismadb.order.create({
     data: orderData,
   });
 
+  console.log("✅ Orden creada exitosamente:", {
+    orderId: order.id,
+    paymentMethod: orderFormData?.paymentMethod || "No especificado",
+  });
+
+  // Si es método de transferencia, no necesitamos crear preferencia en MercadoPago
+  if (orderFormData?.paymentMethod === "transfer") {
+    console.log(
+      "🏦 Método de pago: Transferencia bancaria - Omitiendo MercadoPago"
+    );
+    return NextResponse.json(
+      {
+        url: `${process.env.FRONTEND_STORE_URL}/cart?success=1&transfer=1&orderId=${order.id}`,
+        orderId: order.id,
+        subtotal,
+        shippingFee: appliedShippingFee,
+        totalAmount,
+        paymentMethod: "transfer",
+      },
+      {
+        headers: corsHeaders,
+      }
+    );
+  }
+
+  // Si llegamos aquí, es método de MercadoPago
+  console.log("💳 Método de pago: MercadoPago - Creando preferencia");
   const preference: CreatePreferencePayload = {
     items,
     auto_return: "approved",
@@ -156,18 +204,41 @@ export async function POST(req: Request) {
     external_reference: order.id,
   };
 
-  const response = await mercadopago.preferences.create(preference);
-
-  return NextResponse.json(
-    {
-      url: response.body.init_point,
+  try {
+    const response = await mercadopago.preferences.create(preference);
+    console.log("✅ Preferencia de MercadoPago creada:", {
       orderId: order.id,
-      subtotal,
-      shippingFee: appliedShippingFee,
-      totalAmount,
-    },
-    {
-      headers: corsHeaders,
-    }
-  );
+      preferenceId: response.body.id,
+      initPoint: response.body.init_point,
+    });
+
+    return NextResponse.json(
+      {
+        url: response.body.init_point,
+        orderId: order.id,
+        subtotal,
+        shippingFee: appliedShippingFee,
+        totalAmount,
+        paymentMethod: "card",
+      },
+      {
+        headers: corsHeaders,
+      }
+    );
+  } catch (error) {
+    console.error("❌ Error al crear preferencia en MercadoPago:", error);
+    return NextResponse.json(
+      {
+        error: "Error al crear preferencia de pago",
+        orderId: order.id,
+        subtotal,
+        shippingFee: appliedShippingFee,
+        totalAmount,
+      },
+      {
+        headers: corsHeaders,
+        status: 500,
+      }
+    );
+  }
 }

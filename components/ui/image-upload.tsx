@@ -31,13 +31,24 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
   // Función para extraer el ID de una URL de Cloudinary
   const extractImageId = (url: string): string => {
-    // Extraer solo el nombre del archivo sin parámetros
-    const parts = url.split("/");
-    const filename = parts[parts.length - 1].split(".")[0];
-    return filename;
+    // Extraer la URL completa o un identificador único
+    if (!url) return "";
+
+    // Intentar extraer el public_id completo de la URL de Cloudinary
+    try {
+      const parts = url.split("/");
+      // Obtener el nombre del archivo incluyendo extensión para mayor precisión
+      const filenameWithParams = parts[parts.length - 1];
+      // Separar el nombre de archivo de posibles parámetros de URL
+      const filename = filenameWithParams.split("?")[0];
+      return filename; // Devuelve el nombre completo con extensión
+    } catch (error) {
+      console.error("Error al extraer ID de imagen:", error);
+      return url; // Si hay error, usar la URL completa como fallback
+    }
   };
 
-  // Función para verificar si una imagen ya existe por su contenido (no por URL exacta)
+  // Función para verificar si una imagen ya existe por su URL
   const isDuplicateImage = (
     newUrl: string,
     existingUrls: string[]
@@ -49,19 +60,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       return existingUrls.includes(newUrl);
     }
 
-    // Para URLs de Cloudinary, extraer el ID y comparar
-    const newId = extractImageId(newUrl);
-
-    // Si el ID es muy corto, podría ser un formato diferente, usar la comparación completa
-    if (newId.length < 5) {
-      return existingUrls.includes(newUrl);
-    }
-
-    // Verificar si alguno de los IDs existentes coincide
-    return existingUrls.some((existingUrl) => {
-      const existingId = extractImageId(existingUrl);
-      return existingId === newId;
-    });
+    // Para URLs de Cloudinary, verificar la URL completa
+    // Esto es más seguro que comparar solo partes del nombre
+    return existingUrls.includes(newUrl);
   };
 
   const onUpload = (result: any) => {

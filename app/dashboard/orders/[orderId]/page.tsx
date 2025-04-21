@@ -41,13 +41,22 @@ export default async function OrderPage({
 
   // Procesamos los datos del formulario del cliente
   let clientInfo = null;
+  let paymentMethod = "No especificado";
+
   try {
     if (order.formData) {
       const data =
         typeof order.formData === "string"
           ? JSON.parse(order.formData as string)
           : order.formData;
+
       clientInfo = data.clientInfo || {};
+
+      // Extraer método de pago del objeto formData
+      if (data.paymentMethod) {
+        paymentMethod = data.paymentMethod;
+        console.log("Método de pago encontrado en formData:", paymentMethod);
+      }
     }
   } catch (error) {
     console.error("Error procesando datos del cliente:", error);
@@ -63,6 +72,7 @@ export default async function OrderPage({
   const orderData = {
     id: order.id,
     isPaid: order.isPaid,
+    paymentMethod: paymentMethod,
     subtotal: formatter.format(subtotal),
     shippingFee: formatter.format(Number(order.shippingFee)),
     total: formatter.format(
@@ -88,7 +98,7 @@ export default async function OrderPage({
       province: clientInfo?.provincia || "No disponible",
       postalCode: clientInfo?.codigoPostal || "No disponible",
       comments: clientInfo?.comentarios || "Sin comentarios",
-      paymentMethod: clientInfo?.metodoPago || "No especificado",
+      paymentMethod: paymentMethod,
     },
   };
 

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, MessageCircle, XCircle } from "lucide-react";
 import Image from "next/image";
+import axios from "axios";
+import { toast } from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +19,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Heading } from "@/components/ui/heading";
+import { AlertModal } from "@/components/modals/alert-modal";
 
 interface OrderItemType {
   id: string;
@@ -43,6 +46,7 @@ interface OrderDetailsProps {
   order: {
     id: string;
     isPaid: boolean;
+    paymentMethod: string;
     subtotal: string;
     shippingFee: string;
     total: string;
@@ -54,6 +58,27 @@ interface OrderDetailsProps {
 
 export const OrderDetails: React.FC<OrderDetailsProps> = ({ order }) => {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // Determinar si la orden es de transferencia bancaria o mercadopago
+  const isTransferPayment = order.paymentMethod === "transfer";
+
+  // Función para confirmar el pago
+  const confirmPayment = async () => {
+    try {
+      setLoading(true);
+      await axios.patch(`/api/orders/${order.id}`, { isPaid: true });
+      toast.success("Pago confirmado correctamente");
+      router.refresh();
+    } catch (error: any) {
+      console.error("Error al confirmar el pago:", error);
+      toast.error(error.response?.data || "Error al confirmar el pago");
+    } finally {
+      setLoading(false);
+      setConfirmOpen(false);
+    }
+  };
 
   // Función para generar el enlace de WhatsApp
   const generateWhatsAppLink = () => {
@@ -71,162 +96,199 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order }) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Heading
-          title={`Orden #${order.id.substring(0, 8)}...`}
-          description={`Detalles de la orden realizada el ${order.createdAt}`}
-        />
-        <Badge variant={order.isPaid ? "default" : "destructive"}>
-          {order.isPaid ? (
-            <div className="flex items-center">
-              <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-              Pagada
-            </div>
-          ) : (
-            <div className="flex items-center">
-              <XCircle className="mr-2 h-4 w-4 text-red-500" />
-              No pagada
-            </div>
-          )}
-        </Badge>
-      </div>
+    <>
+      <AlertModal
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={confirmPayment}
+        loading={loading}
+        title="Confirmar pago"
+        description="¿Estás seguro de que deseas marcar esta orden como pagada? Esta acción reducirá el stock de los productos."
+      />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Heading
+            title={`Orden #${order.id.substring(0, 8)}...`}
+            description={`Detalles de la orden realizada el ${order.createdAt}`}
+          />
+          <div className="flex items-center gap-3">
+            <Badge variant={order.isPaid ? "default" : "destructive"}>
+              {order.isPaid ? (
+                <div className="flex items-center">
+                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                  Pagada
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <XCircle className="mr-2 h-4 w-4 text-red-500" />
+                  No pagada
+                </div>
+              )}
+            </Badge>
+            <Badge variant="outline">
+              {order.paymentMethod === "card" && "Tarjeta"}
+              {order.paymentMethod === "transfer" && "Transferencia"}
+              {!["card", "transfer"].includes(order.paymentMethod) &&
+                order.paymentMethod}
+            </Badge>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Sección de Información del Cliente */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Información del Cliente</CardTitle>
-            <CardDescription>Datos de contacto y envío</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h4 className="font-semibold text-sm">Nombre completo</h4>
-              <p>{order.clientInfo.name}</p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm">Email</h4>
-              <p>{order.clientInfo.email}</p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm">Teléfono</h4>
-              <p>{order.clientInfo.phone}</p>
-            </div>
-            <Separator />
-            <div>
-              <h4 className="font-semibold text-sm">Dirección</h4>
-              <p>{order.clientInfo.address}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Sección de Información del Cliente */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Información del Cliente</CardTitle>
+              <CardDescription>Datos de contacto y envío</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <h4 className="font-semibold text-sm">Ciudad</h4>
-                <p>{order.clientInfo.city}</p>
+                <h4 className="font-semibold text-sm">Nombre completo</h4>
+                <p>{order.clientInfo.name}</p>
               </div>
               <div>
-                <h4 className="font-semibold text-sm">Provincia</h4>
-                <p>{order.clientInfo.province}</p>
+                <h4 className="font-semibold text-sm">Email</h4>
+                <p>{order.clientInfo.email}</p>
               </div>
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm">Código Postal</h4>
-              <p>{order.clientInfo.postalCode}</p>
-            </div>
-            <Separator />
-            <div>
-              <h4 className="font-semibold text-sm">Método de Pago</h4>
-              <p>{order.clientInfo.paymentMethod}</p>
-            </div>
-            {order.clientInfo.comments && (
               <div>
-                <h4 className="font-semibold text-sm">Comentarios</h4>
-                <p className="text-sm text-gray-600">
-                  {order.clientInfo.comments}
+                <h4 className="font-semibold text-sm">Teléfono</h4>
+                <p>{order.clientInfo.phone}</p>
+              </div>
+              <Separator />
+              <div>
+                <h4 className="font-semibold text-sm">Dirección</h4>
+                <p>{order.clientInfo.address}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-sm">Ciudad</h4>
+                  <p>{order.clientInfo.city}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm">Provincia</h4>
+                  <p>{order.clientInfo.province}</p>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-semibold text-sm">Código Postal</h4>
+                <p>{order.clientInfo.postalCode}</p>
+              </div>
+              <Separator />
+              <div>
+                <h4 className="font-semibold text-sm">Método de Pago</h4>
+                <p>
+                  {order.paymentMethod === "card" &&
+                    "Tarjeta de crédito/débito"}
+                  {order.paymentMethod === "transfer" &&
+                    "Transferencia bancaria"}
+                  {!["card", "transfer"].includes(order.paymentMethod) &&
+                    order.paymentMethod}
                 </p>
               </div>
-            )}
-          </CardContent>
-          <CardFooter>
-            <a
-              href={generateWhatsAppLink()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full"
-            >
-              <Button
-                variant="default"
-                className="w-full bg-green-600 hover:bg-green-700"
-              >
-                <MessageCircle className="mr-2 h-4 w-4" />
-                Enviar WhatsApp
-              </Button>
-            </a>
-          </CardFooter>
-        </Card>
-
-        {/* Sección de Resumen de la Orden */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumen de la Orden</CardTitle>
-            <CardDescription>Productos y costos</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-4">
-              {order.orderItems.map((item) => (
-                <div key={item.id} className="flex items-start space-x-4">
-                  <div className="relative h-20 w-20 rounded-md overflow-hidden">
-                    {item.imageUrl ? (
-                      <Image
-                        fill
-                        src={item.imageUrl}
-                        alt={item.productName}
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-sm text-gray-500">
-                          Sin imagen
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{item.productName}</p>
-                    <p className="text-sm text-gray-600">
-                      Cantidad: {item.quantity}
-                    </p>
-                    <p className="text-sm">{item.price}</p>
-                  </div>
+              {order.clientInfo.comments && (
+                <div>
+                  <h4 className="font-semibold text-sm">Comentarios</h4>
+                  <p className="text-sm text-gray-600">
+                    {order.clientInfo.comments}
+                  </p>
                 </div>
-              ))}
-            </div>
-            <Separator />
-            <div className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>Subtotal</span>
-                <span>{order.subtotal}</span>
+              )}
+            </CardContent>
+            <CardFooter className="flex flex-col gap-2">
+              <a
+                href={generateWhatsAppLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full"
+              >
+                <Button
+                  variant="default"
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Enviar WhatsApp
+                </Button>
+              </a>
+
+              {isTransferPayment && !order.isPaid && (
+                <Button
+                  variant="default"
+                  className="w-full"
+                  onClick={() => setConfirmOpen(true)}
+                  disabled={loading}
+                >
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Confirmar Pago
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+
+          {/* Sección de Resumen de la Orden */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Resumen de la Orden</CardTitle>
+              <CardDescription>Productos y costos</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                {order.orderItems.map((item) => (
+                  <div key={item.id} className="flex items-start space-x-4">
+                    <div className="relative h-20 w-20 rounded-md overflow-hidden">
+                      {item.imageUrl ? (
+                        <Image
+                          fill
+                          src={item.imageUrl}
+                          alt={item.productName}
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-sm text-gray-500">
+                            Sin imagen
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">{item.productName}</p>
+                      <p className="text-sm text-gray-600">
+                        Cantidad: {item.quantity}
+                      </p>
+                      <p className="text-sm">{item.price}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex justify-between text-sm">
-                <span>Envío</span>
-                <span>{order.shippingFee}</span>
+              <Separator />
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal</span>
+                  <span>{order.subtotal}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Envío</span>
+                  <span>{order.shippingFee}</span>
+                </div>
+                <Separator className="my-2" />
+                <div className="flex justify-between font-semibold">
+                  <span>Total</span>
+                  <span>{order.total}</span>
+                </div>
               </div>
-              <Separator className="my-2" />
-              <div className="flex justify-between font-semibold">
-                <span>Total</span>
-                <span>{order.total}</span>
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button
-              onClick={() => router.push("/dashboard/orders")}
-              variant="outline"
-              className="w-full"
-            >
-              Volver a la lista de órdenes
-            </Button>
-          </CardFooter>
-        </Card>
+            </CardContent>
+            <CardFooter>
+              <Button
+                onClick={() => router.push("/dashboard/orders")}
+                variant="outline"
+                className="w-full"
+              >
+                Volver a la lista de órdenes
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
